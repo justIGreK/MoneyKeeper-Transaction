@@ -7,6 +7,7 @@ type CreateTransaction struct {
 	UserID   string  `validate:"required"`
 	Name     string  `validate:"required"`
 	Cost     float64 `validate:"required"`
+	Date     *string
 }
 
 type Transaction struct {
@@ -26,4 +27,14 @@ type TimeFrame struct {
 type CreateTimeFrame struct {
 	StartDate string
 	EndDate   string
+}
+
+type UpdateTransaction struct {
+	ID       string
+	UserID   string
+	Category *string
+	Name     *string
+	Cost     *float64
+	Date     *string
+	Time     *string
 }

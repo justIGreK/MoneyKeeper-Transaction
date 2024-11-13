@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 
 	"github.com/justIGreK/MoneyKeeper-Transaction/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
@@ -34,7 +34,6 @@ func (r *TransactionRepo) GetTransaction(ctx context.Context, transactionID, use
 	if err != nil {
 		return nil, fmt.Errorf("InvalidID: %v", err)
 	}
-	log.Println(oid, userID)
 	var transaction models.Transaction
 	err = r.collection.FindOne(ctx, bson.M{"_id": oid[0], "user_id": userID}).Decode(&transaction)
 	if err != nil {
@@ -77,4 +76,40 @@ func (r *TransactionRepo) GetAllTransactions(ctx context.Context, userID string)
 		return nil, err
 	}
 	return transactions, err
+}
+
+func (r *TransactionRepo) DeleteTx(ctx context.Context, userID, txID string) error {
+	oid, err := convertToObjectIDs(txID)
+	if err != nil {
+		return fmt.Errorf("InvalidID: %v", err)
+	}
+	_, err = r.collection.DeleteOne(ctx, bson.M{"_id": oid[0],"user_id": userID})
+	if err != nil {
+		return err
+	}
+	return err
+}
+func (r *TransactionRepo) UpdateTx(ctx context.Context, updates models.Transaction) error {
+	oid, err := convertToObjectIDs(updates.ID)
+	if err != nil {
+		return fmt.Errorf("InvalidID: %v", err)
+	}
+	filter := bson.M{"_id": oid[0], "user_id": updates.UserID}
+	update := bson.M{
+		"$set": bson.M{
+			"name":     updates.Name,
+			"cost":     updates.Cost,
+			"category": updates.Category,
+			"date":     updates.Date,
+		},
+	}
+
+	result, err := r.collection.UpdateOne(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+	if result.ModifiedCount == 0 {
+		return errors.New("UpdateTx error: not updated")
+	}
+	return nil
 }

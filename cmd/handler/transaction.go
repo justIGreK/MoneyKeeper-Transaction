@@ -6,6 +6,7 @@ import (
 
 	"github.com/justIGreK/MoneyKeeper-Transaction/internal/models"
 	transactionProto "github.com/justIGreK/MoneyKeeper-Transaction/pkg/go/transaction"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type TransactionServiceServer struct {
@@ -18,10 +19,12 @@ type TransactionService interface {
 	GetTransaction(ctx context.Context, transactionID, userID string) (*models.Transaction, error)
 	GetAllTransactions(ctx context.Context, userID string) ([]models.Transaction, error)
 	GetTXByTimeFrame(ctx context.Context, userID string, timeframe models.CreateTimeFrame) ([]models.Transaction, error)
+	UpdateTx(ctx context.Context, updates models.UpdateTransaction) (*models.Transaction, error)
+	DeleteTx(ctx context.Context, userID, txID string) error
 }
 
-const(
-	Dateformat string = "2006-01-02"
+const (
+	Dateformat     string = "2006-01-02"
 	DateTimeformat string = "2006-01-02T15:04:05"
 )
 
@@ -36,10 +39,9 @@ func (s *TransactionServiceServer) CreateTransaction(ctx context.Context, req *t
 	if err != nil {
 		return nil, err
 	}
-	
 
 	return &transactionProto.CreateTransactionResponse{
-		Id: id,
+		TxId: id,
 	}, nil
 
 }
@@ -78,6 +80,14 @@ func (s *TransactionServiceServer) GetTransactionList(ctx context.Context, req *
 
 }
 
+func (s *TransactionServiceServer) DeleteTransaction(ctx context.Context, req *transactionProto.DeleteTransactionRequest) (*emptypb.Empty, error) {
+	err := s.TxSRV.DeleteTx(ctx, req.UserId, req.TxId)
+	if err != nil {
+		return nil, err
+	}
+	return &emptypb.Empty{}, nil
+}
+
 func convertToProtoTxs(txs []models.Transaction) []*transactionProto.Transaction {
 	protoTxs := make([]*transactionProto.Transaction, len(txs))
 	for i, b := range txs {
@@ -103,4 +113,50 @@ func (s *TransactionServiceServer) GetTXByTimeFrame(ctx context.Context, req *tr
 	return &transactionProto.GetTransactionListResponse{
 		Transactions: protoTxs,
 	}, nil
+}
+
+func (s *TransactionServiceServer) UpdateTransaction(ctx context.Context, req *transactionProto.UpdateTransactionRequest) (*transactionProto.GetTransactionResponse, error) {
+	updates := models.UpdateTransaction{
+		ID:     req.TxId,
+		UserID: req.UserId,
+	}
+	if err := s.validateUpdateTx(req); err != nil {
+		return nil, err
+	}
+	if req.Name != nil {
+		updates.Name = &req.Name.Value
+	}
+	if req.Cost != nil {
+		updates.Cost = &req.Cost.Value
+	}
+	if req.Category != nil {
+		updates.Category = &req.Category.Value
+	}
+	if req.Date != nil {
+		updates.Date = &req.Date.Value
+	}
+	if req.Time != nil {
+		updates.Time = &req.Time.Value
+	}
+	tx, err := s.TxSRV.UpdateTx(ctx, updates)
+	if err != nil {
+		return nil, err
+	}
+	return &transactionProto.GetTransactionResponse{
+		Transaction: &transactionProto.Transaction{
+			Id:       tx.ID,
+			UserId:   tx.UserID,
+			Category: tx.Category,
+			Name:     tx.Name,
+			Cost:     float32(tx.Cost),
+			Date:     tx.Date.Format(DateTimeformat),
+		},
+	}, nil
+}
+
+func (s *TransactionServiceServer) validateUpdateTx(req *transactionProto.UpdateTransactionRequest) error {
+	if req.Name == nil && req.Cost == nil && req.Category == nil && req.Date == nil && req.Time == nil {
+		return errors.New("no new updates")
+	}
+	return nil
 }

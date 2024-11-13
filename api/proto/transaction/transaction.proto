@@ -3,38 +3,58 @@ syntax = "proto3";
 
 package transaction;
 
+import "google/protobuf/wrappers.proto";
+import "google/protobuf/empty.proto";
+
 option go_package = "proto;transaction";
 
 service TransactionService {
   rpc CreateTransaction(CreateTransactionRequest) returns (CreateTransactionResponse);
   rpc GetTransaction(GetTransactionRequest) returns (GetTransactionResponse);
+  rpc UpdateTransaction(UpdateTransactionRequest) returns (GetTransactionResponse);
+  rpc DeleteTransaction(DeleteTransactionRequest) returns (google.protobuf.Empty);
   rpc GetTransactionList(GetTransactionListRequest) returns (GetTransactionListResponse);
   rpc GetTXByTimeFrame(GetTXByTimeFrameRequest) returns (GetTransactionListResponse);
 }
 
-
 message CreateTransactionRequest {
   string category = 1;
-  string user_id = 2;
+  string userId = 2;
   string name = 3;
-  float cost = 4;
+  float cost = 5;
+  google.protobuf.StringValue date = 4;
 }
 
 message CreateTransactionResponse {
-  string id = 1;
+  string txId = 1;
 }
 
 message GetTransactionRequest {
-  string user_id = 1;
-  string tx_id = 2;
+  string userId = 1;
+  string txId = 2;
 }
 
 message GetTransactionResponse {
   Transaction transaction = 1;
 }
 
+message UpdateTransactionRequest {
+  string userId = 1;
+  string txId = 2;
+  google.protobuf.StringValue category = 3;
+  google.protobuf.StringValue name = 4;
+  google.protobuf.DoubleValue cost = 5;
+  google.protobuf.StringValue date = 6;
+  google.protobuf.StringValue time = 7;
+}
+
+message DeleteTransactionRequest {
+  string userId = 1;
+  string txId = 2;
+}
+
 message GetTransactionListRequest {
-  string user_id = 1;
+  string userId = 1;
 }
 
 message GetTransactionListResponse {
@@ -42,14 +62,14 @@ message GetTransactionListResponse {
 }
 
 message GetTXByTimeFrameRequest {
-  string user_id = 1;
-  string start_date = 2;
-  string end_date = 3;
+  string userId = 1;
+  string startDate = 2;
+  string endDate = 3;
 }
 
 message Transaction {
   string id = 1;
-  string user_id = 2;
+  string userId = 2;
   string category = 3;
   string name = 4;
   float cost = 5;

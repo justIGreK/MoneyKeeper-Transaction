@@ -33,7 +33,7 @@ func main() {
 	handler.RegisterServices()
 	reflection.Register(grpcServer)
 
-	log.Printf("Starting gRPC server on :50052")
+	log.Printf("Starting gRPC server on :50053")
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}
